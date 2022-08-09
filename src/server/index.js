@@ -1,9 +1,11 @@
+require('dotenv').config();
+
 const express = require('express');
 const app = express();
 const path = require('path');
 const mongoose = require('mongoose');
 
-const mainController = require('./controllers/mainController.js');
+const apiRouter = require('./routes/apiRouter');
 
 const PORT = 3000;
 
@@ -35,13 +37,7 @@ app.get('/',
 /*
 **  api routes
 */
-app.get('/api',
-  mainController.someMethod,
-  (req, res) => {
-    return res.status(200).json({foo: `${new Date} ${res.locals.info}`});
-  }
-);
-
+app.use('/api', apiRouter);
 
 
 app.listen(PORT, () => { console.log(`Listening on port ${PORT}...`); });
