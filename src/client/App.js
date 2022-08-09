@@ -4,7 +4,10 @@ const App = (props) => {
   const [foo, setFoo] = useState('foo')
 
   useEffect(() => {
-    console.log('effect')
+    fetch('/api')
+      .then(res => res.json())
+      .then(json => console.log(json.foo))
+      .catch(err => console.log(err))
   },[foo])
 
   return (

@@ -15,7 +15,7 @@ app.get('/',
 
 app.get('/api',
   (req, res) => {
-    return res.status(200).send('get response');
+    return res.status(200).json({foo: `${new Date}`});
   }
 );
 

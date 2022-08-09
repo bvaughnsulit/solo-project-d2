@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon ./src/server/index.js",
     "build": "webpack --node-env production",
-    "dev": "webpack-dev-server --open --node-env development"
+    "dev": "npm start & webpack-dev-server --open --node-env development"
   },
   "repository": {
     "type": "git",
