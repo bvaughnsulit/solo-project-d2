@@ -1,4 +1,4 @@
-const Model = require('../models/model.js');
+//const Model = require('../models/Inventory.js/index.js');
 
 const apiController = {};
 
