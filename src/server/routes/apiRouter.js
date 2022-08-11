@@ -1,18 +1,26 @@
 const express = require('express');
 const router = express.Router();
 
-const apiController = require('../controllers/apiController');
 const d2ApiController = require('../controllers/d2ApiController');
-const databaseController = require('../controllers/databaseController');
+const inventoryController = require('../controllers/inventoryController');
+const itemController = require('../controllers/itemController');
 
 router.get('/',
   d2ApiController.getInventory,
-  databaseController.updateInventory,
+  itemController.fillItemDetails,
+  d2ApiController.getItemDetails,
+  // d2ApiController.getInstanceDetails,
+  // inventoryController.updateInventory,
   (req, res) => {
-    return res.status(200).json(res.locals.data);
+    return res.status(200).json(res.locals.itemsDetailed);
   }
 );
 
-module.exports = router;  
+router.get('/itemDetails/:id',
+  d2ApiController.getItemDetails,
+  (req, res) => {
+    return res.status(200).json(res.locals.itemDetails);
+  }
+);
 
-
+module.exports = router; 

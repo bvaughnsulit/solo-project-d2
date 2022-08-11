@@ -24,7 +24,6 @@ app.use(express.json());
 /*
 **  serve static assets
 */
-
 app.use('/dist', express.static(path.resolve(__dirname, '../../dist')));
 
 app.get('/',
@@ -41,3 +40,10 @@ app.use('/api', apiRouter);
 
 
 app.listen(PORT, () => { console.log(`Listening on port ${PORT}...`); });
+
+/*
+**  global error handler
+*/
+app.use((err, req, res, next) => {
+  res.sendStatus(err);
+});
