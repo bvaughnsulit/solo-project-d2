@@ -9,6 +9,9 @@ const itemSchema = new mongoose.Schema({
   image: String,
   type: String,
   damageType: String,
+  sockets: Array,
 });
 
 module.exports = mongoose.model('item', itemSchema);
+
+

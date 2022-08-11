@@ -8,18 +8,12 @@ const itemController = require('../controllers/itemController');
 router.get('/',
   d2ApiController.getInventory,
   itemController.fillItemDetails,
-  d2ApiController.getItemDetails,
+  d2ApiController.getNewItemDetails,
+  itemController.saveNewItems,
   // d2ApiController.getInstanceDetails,
   // inventoryController.updateInventory,
   (req, res) => {
     return res.status(200).json(res.locals.itemsDetailed);
-  }
-);
-
-router.get('/itemDetails/:id',
-  d2ApiController.getItemDetails,
-  (req, res) => {
-    return res.status(200).json(res.locals.itemDetails);
   }
 );
 

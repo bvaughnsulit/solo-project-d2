@@ -34,10 +34,14 @@ d2ApiController.getInventory = (req, res, next) => {
     array.forEach(e => { 
       // if item is crafted or crafted+masterworked
       if (e.state === 8 || e.state === 9) {
-        res.locals.inventoryItemsIds.push({
-          itemHash: e.itemHash,
-          itemInstanceId: e.itemInstanceId
-        });
+        // a hacky solution for the fact that the recurrent impact pattern
+        // has a state of "crafted" for some reason!!
+        if (e.bucketHash !== 766235248) {
+          res.locals.inventoryItemsIds.push({
+            itemHash: e.itemHash,
+            itemInstanceId: e.itemInstanceId
+          });
+        }
       }
     });
   };
@@ -140,47 +144,59 @@ d2ApiController.getInstanceDetails = (req, res, next) => {
 
 /*
 ** get item details that are not specific to a given item instance
-** should this go here? it's not called by any endpoint directly...
 */
-d2ApiController.getItemDetails = async (itemHash) => {
-  const options = {
-    headers: {
-      'X-API-Key': apiKey
-    }
-  };
-  const itemUrl = `${baseUrl}Manifest/DestinyInventoryItemDefinition/`;
-  
-  try {
-    const itemResponse = await fetch(itemUrl + itemHash, options);
-    const itemJson = await itemResponse.json();
-    const patternHash = itemJson.Response.inventory.recipeItemHash;
-    const patternResponse = await fetch(itemUrl + patternHash, options);
-    const patternJson = await patternResponse.json();
-
-    // const sockets = patternJson.Response.sockets;
-
-    // const { socketIndexes } = sockets.socketCategories.find(e => String(e.socketCategoryHash) === hashes.perkSocket);
-
-    // const socketData = [];
-    // socketIndexes.forEach(async (e, i) => {
-    //   const plugSetHash = sockets.socketEntries[i].reusablePlugSetHash;
-    //   const plugUrl = `${baseUrl}Manifest/DestinyPlugSetDefinition/`; 
-    //   const plugResponse = await fetch(plugUrl + req.params.id, options);
-    // });
-        
-    return {
-      itemHash,
-      patternHash,  
-      name: itemJson.Response.displayProperties.name,
-      icon: itemJson.Response.displayProperties.icon,
-      watermark: itemJson.Response.iconWatermark,
-      image: itemJson.Response.screenshot,
-      type: itemJson.Response.itemTypeDisplayName,
-      damageType: itemJson.Response.defaultDamageTypeHash,
-      // sockets: socketData
+d2ApiController.getNewItemDetails = async (req, res, next) => {
+  if (res.locals.newItems.length === 0) return next();
+  const promises = [];
+  res.locals.newItems.forEach(e => { 
+    const options = {
+      headers: {
+        'X-API-Key': apiKey
+      }
     };
-  }
-  catch (err) {console.log(err);}
+    const itemUrl = `${baseUrl}Manifest/DestinyInventoryItemDefinition/`;
+    
+    const itemPromise = fetch(itemUrl + e.itemHash, options);
+    promises.push(itemPromise);
+    itemPromise.then(itemResponse => itemResponse.json())
+      .then(itemJson => {
+        e.name = itemJson.Response.displayProperties.name;
+        e.icon = itemJson.Response.displayProperties.icon;
+        e.watermark = itemJson.Response.iconWatermark;
+        e.image = itemJson.Response.screenshot;
+        e.type = itemJson.Response.itemTypeDisplayName;
+        e.damageType = itemJson.Response.defaultDamageTypeHash;
+        e.patternHash = itemJson.Response.inventory.recipeItemHash;
+        const patternPromise = fetch(itemUrl + e.patternHash, options);
+        promises.push(patternPromise);
+        patternPromise.then(patternResponse => patternResponse.json())
+          .then(patternJson => {
+            const sockets = patternJson.Response.sockets;
+
+            const { socketIndexes } = sockets.socketCategories.find(e => String(e.socketCategoryHash) === hashes.perkSocket);
+
+            e.sockets = [];
+            socketIndexes.forEach(async (elem, index) => {
+              const {
+                socketTypeHash,
+                singleInitialItemHash,
+                reusablePlugItems,
+                reusablePlugSetHash
+              } = sockets.socketEntries[elem];
+
+              e.sockets[index] = {
+                socketTypeHash,
+                singleInitialItemHash,
+                reusablePlugItems,
+                reusablePlugSetHash
+              };
+            });
+        });
+      })
+      .catch(err => console.log(err));
+  });
+  await Promise.all(promises);
+  return next();
 };
 
 
