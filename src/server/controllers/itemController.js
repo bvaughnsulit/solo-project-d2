@@ -18,9 +18,9 @@ itemController.fillItemDetails = async (req, res, next) => {
       if (data === null) res.locals.newItems.push({
         itemHash: e.itemHash
       });
-      res.locals.itemsDetailed.push({
+      else res.locals.itemsDetailed.push({
         itemInstanceId: e.itemInstanceId,
-        ...data
+        ...data.toJSON()
       });
     });
     return promise;
@@ -40,9 +40,8 @@ itemController.saveNewItems = async (req, res, next) => {
     // should be more specific in the item creation here, since this will add the item instance id to the db
     const promise = Item.create(e);
     promise.then(data => {
-      console.log('create result', data);
       res.locals.itemsDetailed.push({
-        ...data
+        ...data.toJSON()
       });
     });
     return promise;

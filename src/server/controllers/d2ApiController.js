@@ -4,7 +4,8 @@ const fetch = require('node-fetch');
 /*
 ** clean this stuff up later!!
 */
-const baseUrl = 'https://www.bungie.net/Platform/Destiny2/';
+const urlRoot = 'https://www.bungie.net';
+const baseUrl = urlRoot + '/Platform/Destiny2/';
 const membershipTypeId = '2';
 const membershipId = process.env.MEMBERSHIP_ID;
 const apiKey = process.env.API_KEY;
@@ -167,9 +168,9 @@ d2ApiController.getNewItemDetails = async (req, res, next) => {
     itemPromise.then(itemResponse => itemResponse.json())
       .then(itemJson => {
         e.name = itemJson.Response.displayProperties.name;
-        e.icon = itemJson.Response.displayProperties.icon;
-        e.watermark = itemJson.Response.iconWatermark;
-        e.image = itemJson.Response.screenshot;
+        e.icon = urlRoot + itemJson.Response.displayProperties.icon;
+        e.watermark = urlRoot + itemJson.Response.iconWatermark;
+        e.image = urlRoot + itemJson.Response.screenshot;
         e.type = itemJson.Response.itemTypeDisplayName;
         e.damageType = itemJson.Response.defaultDamageTypeHash;
         e.patternHash = itemJson.Response.inventory.recipeItemHash;
