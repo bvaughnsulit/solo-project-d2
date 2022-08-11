@@ -20,6 +20,11 @@ const hashes = {
 
 const d2ApiController = {};
 
+
+/*
+** gets a users inventory from API, and adds each item to inventoryItemsIds
+** as an array of objects containing itemHash and itemInstanceId.
+*/
 d2ApiController.getInventory = (req, res, next) => {
   const components = [102, 201, 205]
   const url = `${baseUrl}${membershipTypeId}/Profile/${membershipId}/?components=${components.join(',')}`;
@@ -143,7 +148,8 @@ d2ApiController.getInstanceDetails = (req, res, next) => {
 
 
 /*
-** get item details that are not specific to a given item instance
+** iterates through itemHashes in newItems, querying api for each.
+** results are added to each object element in newItems array 
 */
 d2ApiController.getNewItemDetails = async (req, res, next) => {
   if (res.locals.newItems.length === 0) return next();
@@ -191,7 +197,7 @@ d2ApiController.getNewItemDetails = async (req, res, next) => {
                 reusablePlugSetHash
               };
             });
-        });
+          });
       })
       .catch(err => console.log(err));
   });
