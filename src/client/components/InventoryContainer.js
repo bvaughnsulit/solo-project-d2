@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import Item from "./Item";
 
+
+
 const InventoryContainer = (props) => {
-  const [inventory, setInventory] = useState([])
+  const [inventory, setInventory] = useState({})
   const items = [];
 
   useEffect(() => {
-    fetch('/api')
+    fetch('/api/inventory')
       .then(res => {
         if (!res.ok) console.log(res.status)
         return res.json()
@@ -16,9 +18,33 @@ const InventoryContainer = (props) => {
       })
       .catch(err => console.log(err))
   }, [])
+
+  const getInstanceDetails = (instanceHash) => {
+    fetch('/api/instanceDetails/' + instanceHash)
+    .then(itemRes => {
+      if (!itemRes.ok) console.log(itemRes.status)
+      return itemRes.json()
+    })
+      .then(json => {  
+        console.log('processing response...')
+        const { perks, levelProgress, level, craftedDate } = json
+        let updatedInstance = inventory[instanceHash]
+        updatedInstance = {
+          ...updatedInstance,
+          perks,
+          levelProgress,
+          level,
+          craftedDate
+        }
+
+        setInventory(prevState => ({
+          ...prevState,
+          [instanceHash]: updatedInstance
+        }))
+      })
+  }
   
-  inventory.forEach(e => {
-    console.log(e)
+  Object.values(inventory).forEach(e => {
     items.push(
       <Item
         name={e.name}
@@ -26,8 +52,16 @@ const InventoryContainer = (props) => {
         type={e.type}
         icon={e.icon}
         itemHash={e.itemHash}
-        instanceId={e.itemInstanceId}
+        instanceId={e.instanceId}
         key={e.itemInstanceId}
+        id={e.itemInstanceId}
+        perks={e.perks}
+        levelProgress={e.levelProgress}
+        level={e.level}
+        craftedDate={e.craftedDate}
+        getInstanceDetails={() => {
+          getInstanceDetails(e.itemInstanceId)
+        }}
       />
     )
   })

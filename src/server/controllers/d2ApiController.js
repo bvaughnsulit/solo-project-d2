@@ -15,7 +15,7 @@ const hashes = {
   shapedPlug: ['659359923','1922808508'],
   craftedDate: '3947811849',
   level: '3077315735',
-  levelProgress: '2899837482',
+  levelProgress: ['2899837482','325548827'],
   perkSocket: '3410521964',
 };
 
@@ -98,57 +98,6 @@ d2ApiController.getInventory = (req, res, next) => {
 
 
 /*
-** get item details that are specific to a given item instance
-*/
-d2ApiController.getInstanceDetails = (req, res, next) => {
-  const components = [302, 309];
-  const options = {
-    headers: {
-      'X-API-Key': apiKey,
-      'Authorization': `Bearer ${token}`
-    }
-  };
-  
-  res.locals.items.forEach(e => {
-    const url = `${baseUrl}${membershipTypeId}/Profile/${membershipId}/Item/${e.itemInstanceId}?components=${components.join(',')}`;
-    
-    fetch(url, options)
-      .then(response => {
-        if (response.ok) return response.json();
-        else return next(response.status);
-      })
-      .then(json => {
-
-        // probably should refactor this
-        let craftingData; 
-        let hashIndex = 0;
-        while (!craftingData) {
-          craftingData = json.Response.plugObjectives.data.objectivesPerPlug[hashes.shapedPlug[hashIndex]]
-          hashIndex++;
-        }
-
-        if (craftingData) {
-          for (const i of craftingData) {
-            const hash = i.objectiveHash.toString();
-            if (hash === hashes.level)
-              e.level = i.progress;
-            else if (hash === hashes.craftedDate)
-              e.craftedDate = i.progress;
-            else if (hash === hashes.levelProgress)
-              e.levelProgress = i.progress;
-          }
-        }
-      })
-      .catch(err => next(err));
-    
-  });
-
-  return next();
-
-};
-
-
-/*
 ** iterates through itemHashes in newItems, querying api for each.
 ** results are added to each object element in newItems array 
 */
@@ -206,6 +155,62 @@ d2ApiController.getNewItemDetails = async (req, res, next) => {
   return next();
 };
 
+
+/*
+** gets instance details for one given instanceId, which is provided in url
+*/
+d2ApiController.getInstanceDetails = (req, res, next) => {
+  console.log('called getInstanceDetails()');
+  if (req.params.instanceId === null) {
+    return next({ message: 'instanceId is required' });
+  }
+  const instanceDetails = {itemInstanceId: req.params.instanceId};
+  const components = [302, 309];
+  const options = {
+    headers: {
+      'X-API-Key': apiKey,
+      'Authorization': `Bearer ${token}`
+    }
+  };
+  
+  const url = `${baseUrl}${membershipTypeId}/Profile/${membershipId}/Item/${req.params.instanceId}?components=${components.join(',')}`;
+  
+  fetch(url, options)
+    .then(response => {
+      if (response.ok) return response.json();
+      else return next(response.status);
+    })
+    .then(json => {
+      instanceDetails.perks = [];
+      json.Response.perks.data.perks.forEach((e, i) => {
+        instanceDetails.perks[i] = String(e.perkHash);
+      });
+    
+   
+      const objectives = json.Response.plugObjectives.data.objectivesPerPlug;
+      let craftingData = objectives[hashes.shapedPlug[1]];
+      if (craftingData === undefined) {
+        craftingData = objectives[hashes.shapedPlug[0]];
+      }
+
+      if (craftingData !== undefined) {
+        for (const i of craftingData) {
+          console.log('maybe here')
+          const hash = i.objectiveHash.toString();
+          if (hash === hashes.level)
+            instanceDetails.level = i.progress;
+          else if (hash === hashes.craftedDate)
+            instanceDetails.craftedDate = i.progress;
+          else if (hash === hashes.levelProgress[0]
+            || hash === hashes.levelProgress[1])
+            instanceDetails.levelProgress = i.progress;
+        }
+      }
+      res.locals.instanceDetails = instanceDetails;
+      return next();
+    })
+    .catch(err => next(err));
+};
 
 
 module.exports = d2ApiController;
