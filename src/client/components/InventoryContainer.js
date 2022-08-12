@@ -76,7 +76,7 @@ const InventoryContainer = (props) => {
   })
 
   return (
-    <div>
+    <div id="container">
       {items}
     </div>)
 }
