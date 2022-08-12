@@ -44,7 +44,16 @@ const InventoryContainer = (props) => {
       })
   }
   
-  Object.values(inventory).forEach(e => {
+  Object.values(inventory)
+    // yuck
+    .sort((a, b) => {
+      if (a.craftedDate && b.craftedDate) {
+        return Number(b.craftedDate) - Number(a.craftedDate)
+      } else {
+        return Number(b.itemInstanceId) - Number(a.itemInstanceId)
+      }
+    })
+    .forEach(e => {
     items.push(
       <Item
         name={e.name}

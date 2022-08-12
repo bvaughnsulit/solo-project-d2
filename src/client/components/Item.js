@@ -10,7 +10,7 @@ const Item = (props) => {
   useEffect(props.getInstanceDetails, [])
 
   return (
-    <div>
+    <div id={props.id}>
       <h3>{props.name}</h3>
       <strong>Date Crafted: </strong>{formattedDate}<br/>
       <strong>Level: </strong>{props.level || ''}<br/>

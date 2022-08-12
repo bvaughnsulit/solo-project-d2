@@ -36,6 +36,7 @@ itemController.fillItemDetails = async (req, res, next) => {
 */
 itemController.saveNewItems = async (req, res, next) => {
   if (res.locals.newItems.length === 0) return next();
+  console.log('saving new items...');
   const dbPromises = res.locals.newItems.map(e => {
     // should be more specific in the item creation here, since this will add the item instance id to the db
     const promise = Item.create(e);

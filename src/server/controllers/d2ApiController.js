@@ -12,7 +12,7 @@ const apiKey = process.env.API_KEY;
 const token = process.env.TOKEN;
 
 const hashes = {
-  shapedPlug: ['659359923','1922808508'],
+  shapedPlug: ['659359923','1922808508','4029346515'],
   craftedDate: '3947811849',
   level: '3077315735',
   levelProgress: ['2899837482','325548827'],
@@ -27,7 +27,8 @@ const d2ApiController = {};
 ** as an array of objects containing itemHash and itemInstanceId.
 */
 d2ApiController.getInventory = (req, res, next) => {
-  const components = [102, 201, 205]
+  console.log('called get inventory...');
+  const components = [102, 201, 205];
   const url = `${baseUrl}${membershipTypeId}/Profile/${membershipId}/?components=${components.join(',')}`;
 
   res.locals.inventoryItemsIds = [];
@@ -90,6 +91,7 @@ d2ApiController.getInventory = (req, res, next) => {
       else return next(response.status);
     })
     .then(json => {
+      console.log('handling inventory API response...');
       parseInventoryReponse(json.Response);
       return next();
     })
@@ -103,56 +105,65 @@ d2ApiController.getInventory = (req, res, next) => {
 */
 d2ApiController.getNewItemDetails = async (req, res, next) => {
   if (res.locals.newItems.length === 0) return next();
-  const promises = [];
-  res.locals.newItems.forEach(e => { 
-    const options = {
-      headers: {
-        'X-API-Key': apiKey
-      }
-    };
-    const itemUrl = `${baseUrl}Manifest/DestinyInventoryItemDefinition/`;
+  console.log('getting new item details...');
+  let counter = 0;
+  const promise = new Promise((resolve, reject) => { 
     
-    const itemPromise = fetch(itemUrl + e.itemHash, options);
-    promises.push(itemPromise);
-    itemPromise.then(itemResponse => itemResponse.json())
-      .then(itemJson => {
-        e.name = itemJson.Response.displayProperties.name;
-        e.icon = urlRoot + itemJson.Response.displayProperties.icon;
-        e.watermark = urlRoot + itemJson.Response.iconWatermark;
-        e.image = urlRoot + itemJson.Response.screenshot;
-        e.type = itemJson.Response.itemTypeDisplayName;
-        e.damageType = itemJson.Response.defaultDamageTypeHash;
-        e.patternHash = itemJson.Response.inventory.recipeItemHash;
-        const patternPromise = fetch(itemUrl + e.patternHash, options);
-        promises.push(patternPromise);
-        patternPromise.then(patternResponse => patternResponse.json())
-          .then(patternJson => {
-            const sockets = patternJson.Response.sockets;
+    res.locals.newItems.forEach((e, i) => { 
+      const options = {
+        headers: {
+          'X-API-Key': apiKey
+        }
+      };
+      const itemUrl = `${baseUrl}Manifest/DestinyInventoryItemDefinition/`;
+      
+      fetch(itemUrl + e.itemHash, options)
+        .then(itemResponse => itemResponse.json())
+        .then(itemJson => {
+          console.log('processing new item information...');
+          e.name = itemJson.Response.displayProperties.name;
+          e.icon = urlRoot + itemJson.Response.displayProperties.icon;
+          e.watermark = urlRoot + itemJson.Response.iconWatermark;
+          e.image = urlRoot + itemJson.Response.screenshot;
+          e.type = itemJson.Response.itemTypeDisplayName;
+          e.damageType = itemJson.Response.defaultDamageTypeHash;
+          e.patternHash = itemJson.Response.inventory.recipeItemHash;
+          
+          fetch(itemUrl + e.patternHash, options)
+            .then(patternResponse => patternResponse.json())
+            .then(patternJson => {
+              console.log('processing new pattern information...');
+              const sockets = patternJson.Response.sockets;
 
-            const { socketIndexes } = sockets.socketCategories.find(e => String(e.socketCategoryHash) === hashes.perkSocket);
+              const { socketIndexes } = sockets.socketCategories.find(e => String(e.socketCategoryHash) === hashes.perkSocket);
 
-            e.sockets = [];
-            socketIndexes.forEach(async (elem, index) => {
-              const {
-                socketTypeHash,
-                singleInitialItemHash,
-                reusablePlugItems,
-                reusablePlugSetHash
-              } = sockets.socketEntries[elem];
+              e.sockets = [];
+              socketIndexes.forEach(async (elem, index) => {
+                const {
+                  socketTypeHash,
+                  singleInitialItemHash,
+                  reusablePlugItems,
+                  reusablePlugSetHash
+                } = sockets.socketEntries[elem];
 
-              e.sockets[index] = {
-                socketTypeHash,
-                singleInitialItemHash,
-                reusablePlugItems,
-                reusablePlugSetHash
-              };
+                e.sockets[index] = {
+                  socketTypeHash,
+                  singleInitialItemHash,
+                  reusablePlugItems,
+                  reusablePlugSetHash
+                };
+              });        
+              if (++counter >= res.locals.newItems.length) resolve();
             });
-          });
-      })
-      .catch(err => console.log(err));
+        })
+        .catch(err => console.log(err));
+      
+    });
+
   });
-  await Promise.all(promises);
-  return next();
+  promise.then(() => {
+    return next();
+  });
 };
 
 
@@ -160,7 +171,7 @@ d2ApiController.getNewItemDetails = async (req, res, next) => {
 ** gets instance details for one given instanceId, which is provided in url
 */
 d2ApiController.getInstanceDetails = (req, res, next) => {
-  console.log('called getInstanceDetails()');
+  console.log('called getInstanceDetails with ' + req.params.instanceId);
   if (req.params.instanceId === null) {
     return next({ message: 'instanceId is required' });
   }
@@ -188,14 +199,16 @@ d2ApiController.getInstanceDetails = (req, res, next) => {
     
    
       const objectives = json.Response.plugObjectives.data.objectivesPerPlug;
-      let craftingData = objectives[hashes.shapedPlug[1]];
-      if (craftingData === undefined) {
-        craftingData = objectives[hashes.shapedPlug[0]];
+      let craftingData;
+      for (let i = 0; i < hashes.shapedPlug.length; i++){
+        if (objectives[hashes.shapedPlug[i]]) {
+          craftingData = objectives[hashes.shapedPlug[i]];
+          break;
+        }
       }
-
+      
       if (craftingData !== undefined) {
         for (const i of craftingData) {
-          console.log('maybe here')
           const hash = i.objectiveHash.toString();
           if (hash === hashes.level)
             instanceDetails.level = i.progress;
